@@ -2,6 +2,7 @@ import { useWallet } from "@aptos-labs/wallet-adapter-react"
 import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { WalletConnector } from "@/components/wallet-connector"
+import { CoinBalances } from "@/components/coin-balances"
 import { Shield, Wallet, Droplets, ArrowDownToLine } from "lucide-react"
 
 export function HomePage() {
@@ -62,32 +63,37 @@ export function HomePage() {
           {/* Account Info Section */}
           <div className="space-y-4 mt-20">
             {connected && account?.address ? (
-              <Card className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Connected Account</h3>
-                    <Shield className="h-5 w-5 text-green-600" />
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex flex-col space-y-1">
-                      <span className="text-sm text-muted-foreground">Wallet</span>
-                      <span className="text-sm font-mono">{wallet?.name || 'Unknown'}</span>
+              <>
+                <Card className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Connected Account</h3>
+                      <Shield className="h-5 w-5 text-green-600" />
                     </div>
                     
-                    <div className="flex flex-col space-y-1">
-                      <span className="text-sm text-muted-foreground">Address</span>
-                      <span className="text-sm font-mono break-all">{account.address.toString()}</span>
+                    <div className="space-y-3">
+                      <div className="flex flex-col space-y-1">
+                        <span className="text-sm text-muted-foreground">Wallet</span>
+                        <span className="text-sm font-mono">{wallet?.name || 'Unknown'}</span>
+                      </div>
+                      
+                      <div className="flex flex-col space-y-1">
+                        <span className="text-sm text-muted-foreground">Address</span>
+                        <span className="text-sm font-mono break-all">{account.address.toString()}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-4 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        Ready to manage your liquidity on Liquidswap DEX
+                      </p>
                     </div>
                   </div>
-                  
-                  <div className="pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">
-                      Ready to manage your liquidity on Liquidswap DEX
-                    </p>
-                  </div>
-                </div>
-              </Card>
+                </Card>
+
+                {/* Coin Balances Section */}
+                <CoinBalances accountAddress={account.address.toString()} />
+              </>
             ) : (
               <Card className="p-6">
                 <div className="text-center space-y-4">
