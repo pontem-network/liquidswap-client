@@ -3,6 +3,7 @@ import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { WalletConnector } from "@/components/wallet-connector"
 import { CoinBalances } from "@/components/coin-balances"
+import { LiquidityPools } from "@/components/liquidity-pools"
 import { Shield, Wallet, Droplets, ArrowDownToLine } from "lucide-react"
 
 export function HomePage() {
@@ -93,6 +94,9 @@ export function HomePage() {
 
                 {/* Coin Balances Section */}
                 <CoinBalances accountAddress={account.address.toString()} />
+
+                {/* Liquidity Pools Section */}
+                <LiquidityPools accountAddress={account.address.toString()} />
               </>
             ) : (
               <Card className="p-6">

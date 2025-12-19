@@ -1,7 +1,9 @@
+import { useState } from "react"
 import { useAccountCoins, type CoinBalance } from "@/hooks/use-account-coins"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CopyButton } from "@/components/ui/copy-button"
+import { CollapsibleSection } from "@/components/collapsible-section"
 import { formatCoinBalance, shortenCoinType, extractCoinSymbol } from "@/utils/coin-formatting"
 import { Coins, AlertCircle, Loader2, Snowflake } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -73,6 +75,7 @@ function CoinItem({ coin }: { coin: CoinBalance }) {
 }
 
 export function CoinBalances({ accountAddress }: CoinBalancesProps) {
+  const [isExpanded, setIsExpanded] = useState(true)
   const { data: coins, isLoading, isError, error, refetch } = useAccountCoins(accountAddress)
 
   if (isLoading) {
@@ -128,24 +131,26 @@ export function CoinBalances({ accountAddress }: CoinBalancesProps) {
   }
 
   return (
-    <Card className="p-6">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Coins className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold">Coin Balances</h2>
-          </div>
+    <CollapsibleSection
+      title={
+        <div className="flex items-center gap-2">
+          <span>Coin Balances</span>
           <Badge variant="secondary">
             {coins.length} {coins.length === 1 ? 'Coin' : 'Coins'}
           </Badge>
         </div>
-
-        <div className="space-y-2">
-          {coins.map((coin) => (
-            <CoinItem key={coin.storage_id} coin={coin} />
-          ))}
-        </div>
+      }
+      description="View all your coin balances on Aptos"
+      icon={Coins}
+      iconColor="bg-blue-500"
+      isExpanded={isExpanded}
+      onToggle={() => setIsExpanded(!isExpanded)}
+    >
+      <div className="space-y-2">
+        {coins.map((coin) => (
+          <CoinItem key={coin.storage_id} coin={coin} />
+        ))}
       </div>
-    </Card>
+    </CollapsibleSection>
   )
 }
