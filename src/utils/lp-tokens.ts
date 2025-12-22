@@ -6,6 +6,8 @@ import {
   MODULES_V05_ACCOUNT,
   CURVE_UNCORRELATED,
   CURVE_STABLE,
+  SCRIPTS,
+  SCRIPTS_V2,
   type LiquidswapVersion,
 } from '@/constants/liquidswap'
 
@@ -270,6 +272,103 @@ export function areCoinsSorted(coinX: string, coinY: string): boolean {
 }
 
 /**
+ * Normalizes an address to 64 hex characters (without 0x prefix)
+ * @param address - Address to normalize
+ * @returns Normalized 64-character hex string
+ */
+function normalizeAddressTo64(address: string): string {
+  if (address.startsWith('0x')) {
+    address = address.slice(2)
+  }
+  
+  // Pad to 64 characters
+  while (address.length < 64) {
+    address = '0' + address
+  }
+  
+  return address
+}
+
+/**
+ * Compares two coin types using the same algorithm as Liquidswap contracts
+ * This matches the Move implementation in liquidswap
+ * @param coinX - First coin type
+ * @param coinY - Second coin type
+ * @returns true if coinX < coinY according to Liquidswap sorting rules
+ */
+export function is_sorted(coinX: string, coinY: string): boolean {
+  const EQUAL = 0
+  const LESS_THAN = 1
+  const GREATER_THAN = 2
+
+  function cmp(a: number, b: number): number {
+    if (a === b) return EQUAL
+    if (a < b) return LESS_THAN
+    return GREATER_THAN
+  }
+
+  function compare(symbolX: string, symbolY: string): number {
+    const lenCmp = cmp(symbolX.length, symbolY.length)
+    if (lenCmp !== EQUAL) {
+      return lenCmp
+    }
+    
+    for (let i = 0; i < symbolX.length && i < symbolY.length; i++) {
+      const elemCmp = cmp(symbolX.charCodeAt(i), symbolY.charCodeAt(i))
+      if (elemCmp !== EQUAL) return elemCmp
+    }
+    
+    return EQUAL
+  }
+
+  function cmpAddresses(a: string, b: string): number {
+    const aNorm = normalizeAddressTo64(a)
+    const bNorm = normalizeAddressTo64(b)
+
+    for (let i = 0; i < 64; i += 2) {
+      const aByte = parseInt(aNorm.slice(i, i + 2), 16)
+      const bByte = parseInt(bNorm.slice(i, i + 2), 16)
+      
+      if (aByte < bByte) return LESS_THAN
+      if (aByte > bByte) return GREATER_THAN
+    }
+
+    return EQUAL
+  }
+
+  // Split coin types into parts
+  const coinXParts = coinX.split('::')
+  const coinYParts = coinY.split('::')
+
+  if (coinXParts.length < 3 || coinYParts.length < 3) {
+    // Fallback to simple comparison if format is unexpected
+    return coinX < coinY
+  }
+
+  const coinXAddress = coinXParts[0]
+  const coinYAddress = coinYParts[0]
+  const coinXModule = coinXParts[1]
+  const coinYModule = coinYParts[1]
+  const coinXName = coinXParts[2]
+  const coinYName = coinYParts[2]
+
+  // Compare in reverse order: name, module, then address
+  // This matches the Move implementation
+  const nameComp = compare(coinXName, coinYName)
+  if (nameComp !== EQUAL) {
+    return nameComp === LESS_THAN
+  }
+
+  const moduleComp = compare(coinXModule, coinYModule)
+  if (moduleComp !== EQUAL) {
+    return moduleComp === LESS_THAN
+  }
+
+  const addrComp = cmpAddresses(coinXAddress, coinYAddress)
+  return addrComp === LESS_THAN
+}
+
+/**
  * Prepares transaction arguments for remove_liquidity function
  * @param parsed - Parsed LP token information
  * @param lpTokenType - Original full LP token type string
@@ -289,12 +388,13 @@ export function prepareRemoveLiquidityTransaction(
   typeArguments: string[]
   functionArguments: string[]
 } {
-  // Determine if coins are sorted
-  const isSorted = areCoinsSorted(parsed.coinX, parsed.coinY)
+  // Determine if coins are sorted using Liquidswap's sorting algorithm
+  const isSorted = is_sorted(parsed.coinX, parsed.coinY)
   
-  // Get module address based on version
+  // Get module address and script module based on version
   const moduleAddress = parsed.version === 'V0.5' ? MODULES_V05_ACCOUNT : MODULES_ACCOUNT
-  const scriptsModule = 'scripts' // Both V0 and V0.5 use 'scripts' module
+  // IMPORTANT: V0 uses 'scripts_v2', V0.5 uses 'scripts'
+  const scriptsModule = parsed.version === 'V0.5' ? SCRIPTS : SCRIPTS_V2
   
   // Extract the full curve type
   const fullCurveType = extractFullCurveType(lpTokenType)

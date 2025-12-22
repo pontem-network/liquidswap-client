@@ -32,8 +32,8 @@ export function LPWithdraw({ accountAddress }: { accountAddress: string }) {
   const [lpTokenType, setLpTokenType] = useState("")
   const [lpBalance, setLpBalance] = useState<LPBalance | null>(null)
   const [poolReserves, setPoolReserves] = useState<PoolReserves | null>(null)
-  const [withdrawAmount, setWithdrawAmount] = useState("")
-  const [slippage, setSlippage] = useState("0.5") // 0.5% default slippage
+  const [withdrawAmount, setWithdrawAmount] = useState("0")
+  const [slippage, setSlippage] = useState("100") // 100% default slippage
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)

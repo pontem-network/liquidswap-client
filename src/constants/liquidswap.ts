@@ -15,6 +15,10 @@ export const RESOURCES_V05_ACCOUNT = '0x61d2c22a6cb7831bee0f48363b0eec92369357ae
 export const MODULES_V1_ACCOUNT = '0x54cb0bb2c18564b86e34539b9f89cfe1186e39d89fce54e1cd007b8e61673a85'
 export const RESOURCES_V1_ACCOUNT = '0xa0d8702b7c696d989675cd2f894f44e79361531cff115c0063390922f5463883'
 
+// Script module names for different versions
+export const SCRIPTS_V2 = 'scripts_v2' // For V0
+export const SCRIPTS = 'scripts'    // For V0.5
+
 // LP token decimals
 export const LP_DECIMALS = 6
 
