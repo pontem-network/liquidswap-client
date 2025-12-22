@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useWallet } from "@aptos-labs/wallet-adapter-react"
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
 import { Card } from "@/components/ui/card"
@@ -27,7 +27,7 @@ interface WithdrawOutput {
   y: number
 }
 
-export function LPWithdraw({ accountAddress }: { accountAddress: string }) {
+export function LPWithdraw({ accountAddress, selectedLpTokenType }: { accountAddress: string; selectedLpTokenType?: string }) {
   const { signAndSubmitTransaction } = useWallet()
   const [lpTokenType, setLpTokenType] = useState("")
   const [lpBalance, setLpBalance] = useState<LPBalance | null>(null)
@@ -39,12 +39,36 @@ export function LPWithdraw({ accountAddress }: { accountAddress: string }) {
   const [error, setError] = useState<string | null>(null)
   const [txHash, setTxHash] = useState<string | null>(null)
   const [estimatedOutput, setEstimatedOutput] = useState<WithdrawOutput | null>(null)
+  const hasFetchedRef = useRef<string | null>(null)
 
   const aptos = new Aptos(new AptosConfig({ network: Network.MAINNET }))
 
   const parsedLP = useMemo(() => {
     return lpTokenType ? parseLPToken(lpTokenType) : null
   }, [lpTokenType])
+
+  // Auto-populate LP token type and fetch when selectedLpTokenType changes
+  useEffect(() => {
+    if (selectedLpTokenType && selectedLpTokenType !== lpTokenType) {
+      setLpTokenType(selectedLpTokenType)
+      hasFetchedRef.current = null // Reset fetch tracking
+    }
+  }, [selectedLpTokenType, lpTokenType])
+
+  // Auto-fetch when lpTokenType is set from selectedLpTokenType
+  useEffect(() => {
+    if (lpTokenType && lpTokenType === selectedLpTokenType && hasFetchedRef.current !== lpTokenType) {
+      hasFetchedRef.current = lpTokenType
+      fetchLPBalance()
+    }
+  }, [lpTokenType, selectedLpTokenType])
+
+  // Auto-set withdraw amount to MAX when balance is loaded from selected pool
+  useEffect(() => {
+    if (lpBalance && lpTokenType === selectedLpTokenType) {
+      setWithdrawAmount(lpBalance.parsedBalance.toString())
+    }
+  }, [lpBalance, lpTokenType, selectedLpTokenType])
 
   const fetchLPBalance = async () => {
     if (!lpTokenType.trim()) {
@@ -350,10 +374,7 @@ export function LPWithdraw({ accountAddress }: { accountAddress: string }) {
               onChange={(e) => setLpTokenType(e.target.value)}
               className="font-mono text-xs"
             />
-            <Button
-              onClick={fetchLPBalance}
-              disabled={isLoading || !lpTokenType.trim()}
-            >
+            <Button id="fetch-lp-balance-btn" onClick={fetchLPBalance} disabled={isLoading || !lpTokenType.trim()}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

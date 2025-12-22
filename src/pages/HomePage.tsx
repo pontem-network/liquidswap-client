@@ -1,4 +1,5 @@
 import { useWallet } from "@aptos-labs/wallet-adapter-react"
+import { useState, useRef, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { WalletConnector } from "@/components/wallet-connector"
@@ -9,6 +10,21 @@ import { Shield, Wallet, Droplets, ArrowDownToLine } from "lucide-react"
 
 export function HomePage() {
   const { connected, account, wallet } = useWallet()
+  const [selectedLpToken, setSelectedLpToken] = useState<string | undefined>(undefined)
+  const withdrawSectionRef = useRef<HTMLDivElement>(null)
+
+  // Scroll to withdraw section when a pool is selected
+  useEffect(() => {
+    if (selectedLpToken) {
+      setTimeout(() => {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+      }, 300)
+    }
+  }, [selectedLpToken])
+
+  const handlePoolSelect = (lpTokenType: string) => {
+    setSelectedLpToken(lpTokenType)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -97,10 +113,12 @@ export function HomePage() {
                 <CoinBalances accountAddress={account.address.toString()} />
 
                 {/* Liquidity Pools Section */}
-                <LiquidityPools accountAddress={account.address.toString()} />
+                <LiquidityPools accountAddress={account.address.toString()} onPoolSelect={handlePoolSelect} />
 
                 {/* LP Withdraw Section */}
-                <LPWithdraw accountAddress={account.address.toString()} />
+                <div ref={withdrawSectionRef}>
+                  <LPWithdraw accountAddress={account.address.toString()} selectedLpTokenType={selectedLpToken} />
+                </div>
               </>
             ) : (
               <Card className="p-6">

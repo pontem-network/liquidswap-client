@@ -12,14 +12,18 @@ import { Button } from "@/components/ui/button"
 
 interface LiquidityPoolsProps {
   accountAddress?: string
+  onPoolSelect?: (lpTokenType: string) => void
 }
 
-function PoolItem({ pool }: { pool: LiquidityPool }) {
+function PoolItem({ pool, onSelect }: { pool: LiquidityPool; onSelect?: (lpTokenType: string) => void }) {
   const poolName = formatLPPoolName(pool.coinX, pool.coinY)
   const balance = formatCoinBalance(pool.lpBalance, LP_DECIMALS)
 
   return (
-    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+    <div 
+      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+      onClick={() => onSelect?.(pool.fullType)}
+    >
       <div className="flex items-center gap-4 flex-1 min-w-0">
         {/* Pool Icon */}
         <div className="flex-shrink-0">
@@ -49,7 +53,7 @@ function PoolItem({ pool }: { pool: LiquidityPool }) {
       </div>
 
       {/* Copy Button */}
-      <div className="ml-2 flex-shrink-0">
+      <div className="ml-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         <CopyButton 
           textToCopy={pool.fullType}
           variant="ghost"
@@ -63,10 +67,12 @@ function PoolItem({ pool }: { pool: LiquidityPool }) {
 
 function VersionSection({ 
   version, 
-  pools 
+  pools,
+  onPoolSelect
 }: { 
   version: string
-  pools: LiquidityPool[] 
+  pools: LiquidityPool[]
+  onPoolSelect?: (lpTokenType: string) => void
 }) {
   if (pools.length === 0) {
     return null
@@ -84,14 +90,14 @@ function VersionSection({
       </div>
       <div className="space-y-2">
         {pools.map((pool, index) => (
-          <PoolItem key={`${pool.fullType}-${index}`} pool={pool} />
+          <PoolItem key={`${pool.fullType}-${index}`} pool={pool} onSelect={onPoolSelect} />
         ))}
       </div>
     </div>
   )
 }
 
-export function LiquidityPools({ accountAddress }: LiquidityPoolsProps) {
+export function LiquidityPools({ accountAddress, onPoolSelect }: LiquidityPoolsProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const { data: groupedPools, isLoading, isError, error, refetch } = useLiquidityPools(accountAddress)
 
@@ -170,11 +176,10 @@ export function LiquidityPools({ accountAddress }: LiquidityPoolsProps) {
       onToggle={() => setIsExpanded(!isExpanded)}
     >
       <div className="space-y-6">
-        <VersionSection version="V0" pools={groupedPools.V0} />
-        <VersionSection version="V0.5" pools={groupedPools['V0.5']} />
-        <VersionSection version="V1" pools={groupedPools.V1} />
+        <VersionSection version="V0" pools={groupedPools.V0} onPoolSelect={onPoolSelect} />
+        <VersionSection version="V0.5" pools={groupedPools['V0.5']} onPoolSelect={onPoolSelect} />
+        <VersionSection version="V1" pools={groupedPools.V1} onPoolSelect={onPoolSelect} />
       </div>
     </CollapsibleSection>
   )
 }
-
