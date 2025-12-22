@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card"
 import { WalletConnector } from "@/components/wallet-connector"
 import { CoinBalances } from "@/components/coin-balances"
 import { LiquidityPools } from "@/components/liquidity-pools"
+import { LPWithdraw } from "@/components/lp-withdraw"
 import { Shield, Wallet, Droplets, ArrowDownToLine } from "lucide-react"
 
 export function HomePage() {
@@ -97,6 +98,9 @@ export function HomePage() {
 
                 {/* Liquidity Pools Section */}
                 <LiquidityPools accountAddress={account.address.toString()} />
+
+                {/* LP Withdraw Section */}
+                <LPWithdraw accountAddress={account.address.toString()} />
               </>
             ) : (
               <Card className="p-6">

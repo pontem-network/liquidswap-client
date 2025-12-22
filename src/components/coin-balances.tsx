@@ -75,7 +75,7 @@ function CoinItem({ coin }: { coin: CoinBalance }) {
 }
 
 export function CoinBalances({ accountAddress }: CoinBalancesProps) {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
   const { data: coins, isLoading, isError, error, refetch } = useAccountCoins(accountAddress)
 
   if (isLoading) {

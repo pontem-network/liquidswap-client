@@ -2,6 +2,8 @@ import {
   RESOURCES_ACCOUNT,
   RESOURCES_V05_ACCOUNT,
   RESOURCES_V1_ACCOUNT,
+  MODULES_ACCOUNT,
+  MODULES_V05_ACCOUNT,
   CURVE_UNCORRELATED,
   CURVE_STABLE,
   type LiquidswapVersion,
@@ -196,4 +198,121 @@ export function formatLPPoolName(coinX: string, coinY: string): string {
   const symbolX = extractCoinSymbol(coinX)
   const symbolY = extractCoinSymbol(coinY)
   return `${symbolX} / ${symbolY}`
+}
+
+/**
+ * Builds the LiquidityPool resource type from a parsed LP token
+ * @param parsed - Parsed LP token information
+ * @param lpTokenType - Original full LP token type string (needed to extract full curve type)
+ * @returns The LiquidityPool resource type string
+ */
+export function buildLiquidityPoolResourceType(
+  parsed: ParsedLPToken,
+  lpTokenType: string
+): string {
+  // Get MODULES account based on version
+  const modulesAccount = parsed.version === 'V0.5' ? MODULES_V05_ACCOUNT : MODULES_ACCOUNT
+
+  // IMPORTANT: Do NOT sort coins! The order in LiquidityPool resource type must match
+  // the order in the original LP token, not be sorted lexicographically.
+  // The pool resource uses the same coin order as defined in the LP token.
+  const coinXTrimmed = parsed.coinX.trim()
+  const coinYTrimmed = parsed.coinY.trim()
+  // Use original order from LP token, not sorted
+  const sortedCoinX = coinXTrimmed
+  const sortedCoinY = coinYTrimmed
+
+  // Extract the full curve type from the original LP token type
+  // The curve type is the third generic parameter in LP<CoinX, CoinY, Curve>
+  const lpMatch = lpTokenType.match(/::lp_coin::LP<(.+)>/)
+  if (!lpMatch) {
+    throw new Error('Invalid LP token type format')
+  }
+
+  const generics = lpMatch[1]
+  const parts = splitGenerics(generics)
+  
+  if (parts.length < 3) {
+    throw new Error('LP token type must have at least 3 generic parameters')
+  }
+
+  const fullCurveType = parts[2].trim()
+
+  // Build the LiquidityPool resource type
+  // IMPORTANT: Use the original coin order from LP token, NOT sorted order
+  // The pool resource type must match the order in the LP token definition
+  const resourceType = `${modulesAccount}::liquidity_pool::LiquidityPool<${sortedCoinX},${sortedCoinY},${fullCurveType}>`
+  
+  return resourceType
+}
+
+/**
+ * Extracts the full curve type from an LP token type string
+ * @param lpTokenType - Original full LP token type string
+ * @returns The full curve type string
+ */
+export function extractFullCurveType(lpTokenType: string): string {
+  const lpMatch = lpTokenType.match(/::lp_coin::LP<[^,]+,\s*[^,]+,\s*(.+)>/)
+  if (!lpMatch) {
+    throw new Error('Invalid LP token type format')
+  }
+  return lpMatch[1].trim()
+}
+
+/**
+ * Checks if coins are sorted lexicographically
+ * @param coinX - First coin type
+ * @param coinY - Second coin type
+ * @returns true if coinX < coinY lexicographically
+ */
+export function areCoinsSorted(coinX: string, coinY: string): boolean {
+  return coinX < coinY
+}
+
+/**
+ * Prepares transaction arguments for remove_liquidity function
+ * @param parsed - Parsed LP token information
+ * @param lpTokenType - Original full LP token type string
+ * @param burnAmount - Amount of LP tokens to burn (in smallest units)
+ * @param minXOutput - Minimum X coin output (in smallest units)
+ * @param minYOutput - Minimum Y coin output (in smallest units)
+ * @returns Object with function name, type arguments, and function arguments
+ */
+export function prepareRemoveLiquidityTransaction(
+  parsed: ParsedLPToken,
+  lpTokenType: string,
+  burnAmount: string,
+  minXOutput: string,
+  minYOutput: string
+): {
+  functionName: string
+  typeArguments: string[]
+  functionArguments: string[]
+} {
+  // Determine if coins are sorted
+  const isSorted = areCoinsSorted(parsed.coinX, parsed.coinY)
+  
+  // Get module address based on version
+  const moduleAddress = parsed.version === 'V0.5' ? MODULES_V05_ACCOUNT : MODULES_ACCOUNT
+  const scriptsModule = 'scripts' // Both V0 and V0.5 use 'scripts' module
+  
+  // Extract the full curve type
+  const fullCurveType = extractFullCurveType(lpTokenType)
+
+  const functionName = `${moduleAddress}::${scriptsModule}::remove_liquidity`
+  
+  // Sort type arguments and function arguments based on coin order
+  const typeArguments = isSorted
+    ? [parsed.coinX, parsed.coinY, fullCurveType]
+    : [parsed.coinY, parsed.coinX, fullCurveType]
+
+  const functionArguments = isSorted
+    ? [burnAmount, minXOutput, minYOutput]
+    : [burnAmount, minYOutput, minXOutput]
+
+  return {
+    functionName,
+    typeArguments,
+    functionArguments,
+  }
 }
